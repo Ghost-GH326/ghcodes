@@ -1,0 +1,11 @@
+logs/*
+target/*
+venv
+__pycache__
+.vscode/*
+.DS_Store
+*.csv
+models/*
+lib/jdconfig/dist/*
+*.egg-info
+Library

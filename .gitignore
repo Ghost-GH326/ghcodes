@@ -11,3 +11,6 @@ pytorch-image-classification-master/data/*
 pytorch-image-classification-master/*.zip
 pytorch-image-classification-master/*.pt
 pytorch-image-classification-master/*.tgz
+AppAlgorithmFace/material/*
+AppAlgorithmFace/models/*
+AppAlgorithmFace-master/models/*

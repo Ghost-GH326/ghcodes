@@ -1,0 +1,61 @@
+[Server]
+Debug = false
+Gzip = true
+AutoReload = false
+Port = 9185
+ProcessNum = 1
+SupportedBusiness = ["TEST", "BOS-BIKE", "hitch", "fiance", "user", "RISK", "hellotaxi"]
+
+[Log]
+FilePath = "./logs/hlog-app.log"
+
+[Oss]
+
+[Detect]
+ModelPath = "/home/guohao826/AppAlgorithmFace/models/detection_model/facedetect_640.pth"
+LandmarkModelPath = "/home/guohao826/AppAlgorithmFace/models/detection_model/pfld128_20200211.pth.tar"
+InputShape = 640
+Threshold = 0.8
+GpuID = 3
+AlignShape = [112, 112]
+
+[Feature]
+ModelPath = "/home/guohao826/AppAlgorithmFace/models/feature_model/res50_fullada_celerhello1230_024.pth"
+ModelConfig = "/home/guohao826/AppAlgorithmFace/models/feature_model/train.json5"
+GpuID = 3
+BatchSize = 2
+InputShape = [112, 112]
+MatchThreshold = 0.3
+SaveDataRate = 1
+
+[Alive]
+ActionTypes = [1, 2, 3, 999]
+SpecialBusiness = ["hitch", "hellotaxi"]
+ModelPath = "/home/guohao826/AppAlgorithmFace/models/alive_model/shape_predictor_68_face_landmarks.dat"
+ThresholdOrientation = 0.6
+ThresholdMouse = 2.5
+ThresholdMove = 17
+ThresholdEye = 0.7
+ThresholdAligh = 50
+WinWidth = 280
+WinHeight = 280
+SaveDataRate = 1
+
+[Anti]
+GpuID = -1
+ModelPath = "/home/guohao826/AppAlgorithmFace/models/anti_model/v3_lqc_224.pth"
+FakeThreshold = 0.87
+
+[Redis]
+AuthUrl = "http://newdev-basicconf.hellobike.cn:7878/redis/getConfig"
+AuthToken = "s1b91fZuDIdj45tBz1WR"
+AuthApp = "AppAlgorithmBikeBattery"
+Name = "public-redis"
+DB = 1
+MinSize = 10
+MaxSize = 100
+
+[Session]
+ExpireSeconds = 600
+AliveMaxUsed = 10
+FaceMaxUsed = 20

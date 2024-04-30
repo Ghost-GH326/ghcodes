@@ -1,0 +1,186 @@
+#!/bin/bash
+# chkconfig: 234 20 80
+
+cmd=$1
+APPID="AppAlgorithmFace"
+PROJECT_DIR=/workspace/carkey/${APPID}/latest
+START_OPTS="-DAPPID=${APPID}"
+home=$(pwd)
+USER="deploy"
+export PYTHONPATH=${home}:$PYTHONPATH
+export PATH=/usr/local/cuda-10.1/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-10.1/lib64:$LD_LIBRARY_PATH
+export LANG="zh_CN.UTF-8"
+
+# 当发生冲突，start会调用此函数，并将冲突的信息输出到文件中，包括（冲突事件,进程号,运行用户,进程名称等）
+getNameFromPid(){
+   nowTime1=$(date)
+   tips="冲突时间"
+   printf "冲突进程信息请查看:/tmp/startCrash.log\n"
+
+   echo $tips$nowTime1 >> /tmp/startCrash.log
+   echo "冲突进程数量：" $# >> /tmp/startCrash.log
+
+   for loop in $*
+   do
+       ps -ef|grep $loop|grep -v grep >> /tmp/startCrash.log
+   done
+}
+
+# get pid
+getPid(){
+    if [ -z $1 ]
+    then
+        echo "Usage: $0 process-pattern" >&2
+        exit 1
+    fi
+
+    exc_pids="^$$$"
+    curr_pid=$$
+    while [ $curr_pid -gt 0 ]
+    do
+        curr_pid=`ps -fwwp $curr_pid|grep -v PPID|awk '{print $3}'`
+        exc_pids="$exc_pids|^$curr_pid$"
+    done
+    curr_script=$0
+    curr_script=${curr_script#.}
+    curr_script=${curr_script//./\\.}
+
+    if [ $# -eq 1 ]
+    then
+        ps -efww|grep "$1"|grep '\-DAPPID\='|grep -Ev "grep|$curr_script"|awk '{print $2}'|grep -Ev $exc_pids
+    else
+        firstArg=$1
+        shift
+        ps -efww|grep "$firstArg "|grep "$*"|grep '\-DAPPID\='|grep -Ev "grep|$curr_script"|awk '{print $2}'|grep -Ev $exc_pids
+    fi
+}
+
+function get_num(){
+    num=$(ps -ef | grep -w "${APPID}" | grep "\\${START_OPTS}" | grep -v grep | wc -l)
+    return $num
+}
+
+function start(){
+    echo "${APPID} is starting..."
+    cd ${PROJECT_DIR}
+    get_num
+    num=$?
+    # 有冲突
+    if [ "$num" -ge "1" ]
+    then
+        echo "conflict, ${APPID} is already running"
+        pids=`getPid $APPID`
+        getNameFromPid $pids
+        exit 1
+    else
+        # chown root:root logrotate
+        # /bin/sudo chown deploy:deploy $PROJECT_DIR/logs/*
+        # 正常启动
+        ln -f -s ./venv ./${APPID}
+        PY_CMD="nohup /usr/local/${APPID}/bin/python3 src/main.py $START_OPTS > /dev/null 2>&1 &"
+        echo $PY_CMD
+        if ! [ `whoami` = "deploy" ];then
+          /bin/su $USER -c "mkdir -p $PROJECT_DIR/temp/"
+          /bin/su $USER -c "mkdir -p $PROJECT_DIR/logs/"
+          /bin/su $USER -c "$PY_CMD"
+        else
+          mkdir -p $PROJECT_DIR"/temp/"
+          mkdir -p $PROJECT_DIR"/logs/"
+          /bin/bash -c "$PY_CMD"
+        fi
+        sleep 3
+        get_num
+        num=$?
+        if [ "$num" -ge "1" ]
+        then
+            echo "${APPID} is started"
+            exit 0
+        else
+            echo "start ${APPID} failed"
+            exit 1
+        fi
+    fi
+}
+
+function stop(){
+    echo "${APPID} is stopping..."
+    ps -ef | grep -w "${APPID}" | grep "\\${START_OPTS}" | grep -v grep | awk '{print $2}' | xargs kill -9
+    sleep 3
+    get_num
+    num=$?
+    if [ "$num" == "0" ]
+    then
+        echo "$APPID is stopped"
+        return 0
+    else
+        echo "stop $APPID failed"
+        exit 1
+    fi
+}
+
+function restart(){
+    stop
+    result=$?
+    if [ "$result" == "0" ]
+    then
+        start
+        return $?
+    else
+        exit 1
+    fi
+}
+
+function local_start(){
+    echo "${APPID} is starting..."
+    get_num
+    num=$?
+    # 有冲突
+    if [ "$num" -ge "1" ]
+    then
+        echo "conflict, ${APPID} is already running"
+        pids=`getPid $APPID`
+        getNameFromPid $pids
+        exit 1
+    else
+        # 正常启动
+        nohup ./venv/bin/python3 src/main.py $START_OPTS > ./logs/nohup.log 2>&1 &
+        sleep 3
+        get_num
+        num=$?
+        if [ "$num" -ge "1" ]
+        then
+            echo "${APPID} is started"
+            exit 0
+        else
+            echo "start ${APPID} failed"
+            exit 1
+        fi
+    fi
+}
+
+function local_restart(){
+    stop
+    result=$?
+    if [ "$result" == "0" ]
+    then
+        local_start
+        return $?
+    else
+        exit 1
+    fi
+}
+
+if [ "$#" -eq "1" ];then
+    if [[ "$cmd" =~ ^(start|stop|restart|local_start|local_restart)$ ]]; then
+        "$1"
+    else
+        echo "$cmd"
+        echo "cmd invalid, only (start, stop, restart, local_start, local_restart) is available"
+        exit 1
+    fi
+else
+    echo "Usage: `basename $0` cmd(start, stop, restart, local_start, local_restart)"
+    echo "You provided $# parameters, but 1 are required."
+    exit 1
+fi
