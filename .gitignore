@@ -17,3 +17,6 @@ AppAlgorithmFace-master/models/*
 FaceAlgorithm/models/*
 CoRe/experiments/*
 CoRe/Mydata/*
+miniseries/frames/*
+miniseries/material/*
+miniseries/processing_video/*
