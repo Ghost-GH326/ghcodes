@@ -7,3 +7,7 @@ fanpai_classification/data/*
 fanpai_classification/*.pt
 fanpai_classification/tools/__pycache__
 fanpai_classification/models/*
+pytorch-image-classification-master/data/*
+pytorch-image-classification-master/*.zip
+pytorch-image-classification-master/*.pt
+pytorch-image-classification-master/*.tgz
