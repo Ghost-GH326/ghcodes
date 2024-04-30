@@ -1,0 +1,4 @@
+fanpai_classifier/models/*
+fanpai_classifier/__pycache__
+fanpai_classifier/.ipynb_checkpoints/*
+fanpai_classifier/downfile.py
